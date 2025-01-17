@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /home
 
 # Install required system packages
 RUN apt-get update && \
