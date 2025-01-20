@@ -51,7 +51,19 @@ def load_tiles(tile_dir):
             path = os.path.join(tile_dir, file)
             tile_image = Image.open(path).convert('RGB')
             tiles.append(Tile(tile_image, idx))
+            print(path)
     return tiles
+
+
+def viz_cell(cell, grid_size, tile_size, save_path, tiles):
+    print(cell.possible_tiles)
+    img_size = grid_size * tile_size
+    grid_img = Image.new('RGB', (img_size, img_size), (255, 255, 255))
+    pos_x, pos_y = cell.position[0] * tile_size, cell.position[1] * tile_size
+    tile_id = list(cell.possible_tiles)[0]
+    tile_img = tiles[tile_id].image
+    grid_img.paste(tile_img, (pos_x, pos_y))
+    grid_img.save(save_path)
 
 
 def visualize_grid(cells, grid_size, tile_size, tiles, save_path):
@@ -71,7 +83,7 @@ def visualize_grid(cells, grid_size, tile_size, tiles, save_path):
 
 
 def main():
-    tile_dir = "data/set1/"
+    tile_dir = "data/set1/extended"
     tiles = load_tiles(tile_dir)
     tile_ids = [tile.id for tile in tiles]
     grid_size = 3
@@ -99,6 +111,8 @@ def main():
     print(f"cell selected: {random_cell.position}")
     random_cell.collapse(random_tile)
 
+    """
+
     for x in range(grid_size):
         for y in range(grid_size):
             cells[x][y].update_possible_tiles({tile.id: tile.compatible_tiles for tile in tiles})
@@ -107,8 +121,9 @@ def main():
     for row in cells:
         for cell in row:
             print(f"Cell {cell.position}: Entropy = {cell.entropy()}")
-
-    visualize_grid(cells, grid_size, tile_size, tiles, "grid_output.png")
+    """
+    # visualize_grid(cells, grid_size, tile_size, tiles, "grid_output.png")
+    viz_cell(random_cell, grid_size, tile_size, "grid_output.png", tiles)
     print("Grid visualization saved as 'grid_output.png'")
 
 
