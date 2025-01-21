@@ -37,7 +37,7 @@ def print_compatibility(tiles):
 
 if __name__ == "__main__":
 
-    tile_set = "set1"
+    tile_set = "set2"
     tile_directory = f"data/{tile_set}/extended"
     tiles = load_tiles(tile_directory)
     check_tile_compatibility(tiles)
