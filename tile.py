@@ -20,6 +20,16 @@ class Tile:
         elif direction == "right":
             return array[:, -1, :]
 
+    def check_tile_compatibility(self, tiles):
+        directions = ["top", "bottom", "left", "right"]
+        opposite = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
+        for direction in directions:
+            self_edge = self.get_edge(direction)
+            for other_tile in tiles:
+                other_edge = other_tile.get_edge(opposite[direction])
+                if np.array_equal(self_edge, other_edge):
+                    self.add_compatible_tile(direction, other_tile.id)
+
     def add_compatible_tile(self, direction, tile_id):
         self.compatible_tiles[direction].add(tile_id)
 
@@ -61,16 +71,5 @@ class Tile:
                     offset_y = tile_size * (1 + i)
                     offset_x = tile_size * (nb_cells - 1)
                     grid_image.paste(tiles[comp_id].image, (offset_x, offset_y))
-
-                """
-                offset_x =  + dx * tile_size
-                offset_y =  + dy * tile_size
-
-                if dx == 0:
-                    offset_x += (i - len(compatible_ids) // 2) * tile_size
-                else:
-                    offset_y += (i - len(compatible_ids) // 2) * tile_size
-                """
-                # grid_image.paste(tiles[comp_id].image, (offset_x, offset_y))
 
         grid_image.save(save_path)
