@@ -2,6 +2,7 @@ from tile import Tile
 import random
 import os
 from PIL import Image
+import time
 
 
 class Cell:
@@ -13,6 +14,7 @@ class Cell:
             self.possible_tiles_id.add(t.id)
         self.collapsed_tile = None
         self.neighbors = {"top": None, "bottom": None, "left": None, "right": None}
+        self.is_collapsed = False
 
     def set_neighbor(self, direction, neighbor_cell):
         if direction in self.neighbors:
@@ -32,7 +34,7 @@ class Cell:
                     if t.id == id:
                         new_tiles.add(t)
             self.possible_tiles = new_tiles
-            print(f"tile available for this cell: {self.position}")
+            # print(f"tile available for this cell: {self.position}")
         else:
             self.possible_tiles_id = set()
             self.possible_tiles = set()
@@ -47,18 +49,12 @@ class Cell:
                 return True
         return False
         """
-
-    def is_collapsed(self):
-        return len(self.possible_tiles) == 1
-
-    def collapse(self, chosen_tile=None):
-        if chosen_tile and chosen_tile in self.possible_tiles:
-            self.possible_tiles = {chosen_tile}
-            self.possible_tiles_id = {chosen_tile.id}
-        elif not self.is_collapsed():
-            self.possible_tiles = {random.choice(list(self.possible_tiles))}
-            self.possible_tiles_id = {list(self.possible_tiles)[0].id}
+    def collapse(self):
+        self.possible_tiles = {random.choice(list(self.possible_tiles))}
+        self.possible_tiles_id = {list(self.possible_tiles)[0].id}
         self.collapsed_tile = list(self.possible_tiles)[0]
+        self.is_collapsed = True
+
     def entropy(self):
         return len(self.possible_tiles)
 
@@ -78,27 +74,56 @@ def visualize_grid(cells, grid_size, tile_size, tiles, save_path):
     grid_img = Image.new("RGB", (img_size, img_size), (255, 255, 255))
     for row in cells:
         for cell in row:
-            print(f"{cell.position} --> {cell.entropy()}")
-            if cell.is_collapsed():
-                print(f"cell : {cell.position} is collapsed")
+            if cell.is_collapsed:
+                print(f"{cell.position} --> {cell.entropy()} --> is collapsed")
                 tile = list(cell.possible_tiles)[0]
                 tile_img = tile.image
                 pos_x, pos_y = cell.position[0] * tile_size, cell.position[1] * tile_size
                 grid_img.paste(tile_img, (pos_x, pos_y))
+            else:
+                print(f"{cell.position} --> {cell.entropy()}")
+
     grid_img.save(save_path)
+
+
+def find_min_entropy(elements):
+    print("--> ", elements)
+    if len(elements) > 0:
+        # Find the minimum entropy value in the list
+        min_entropy = min(elements, key=lambda x: x[1])[1]
+        # Filter elements that have the minimum entropy
+        min_entropy_elements = [element for element in elements if element[1] == min_entropy]
+        cell_selected = random.choice(min_entropy_elements)
+    else:
+        cell_selected = []
+    return cell_selected
 
 
 def main():
     tile_dir = "data/set2/extended"
     output_dir = "data/set2/output"
+
+    # remove all previous outputs 
+    for filename in os.listdir(output_dir):
+        file_path = os.path.join(output_dir, filename)
+        os.remove(file_path)
+    while any(os.path.exists(os.path.join(output_dir, f)) for f in os.listdir(output_dir)):
+        time.sleep(0.1)
+
+    # load tiles and check compatibility 
     tiles = load_tiles(tile_dir)
     for t in tiles:
         t.check_tile_compatibility(tiles)
-    grid_size = 3
-    tile_size = tiles[0].image.size[0]
 
+    # pram output
+    grid_size = 8
+    tile_size = tiles[0].image.size[0]
+    max_step = grid_size*grid_size + 1
+
+    # setup cells
     cells = [[Cell((x, y), tiles) for y in range(grid_size)] for x in range(grid_size)]
 
+    # setup neighbors
     for x in range(grid_size):
         for y in range(grid_size):
             cell = cells[x][y]
@@ -112,33 +137,58 @@ def main():
                 cell.set_neighbor("right", cells[x + 1][y])
 
     step = 0
+    print("------------")
+    print(f"step: {step}")
     visualize_grid(cells, grid_size, tile_size, tiles, f"{output_dir}/step{step}.png")
-    print(f"Step {step}: Next collapsed cell saved as 'step{step}.png'")
 
-    collapse_cell = cells[0][0]
-    collapse_cell.collapse(tiles[0])
+    # collapsing a cell
+    collapse_cell = cells[0][1]
 
-    collapse_list = [collapse_cell]
-
-    change_dir = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
+    # loop until the grid is complete
     while True:
         step += 1
+        collapse_cell.collapse()
+
+        # check if all cells have been collapsed
+        if all(cell.is_collapsed for row in cells for cell in row):
+            visualize_grid(cells, grid_size, tile_size, tiles, f"{output_dir}/step{step}.png")
+            break
+
+        print("------------")
         print(f"Step {step}:")
-        for cell in collapse_list:
-            for n in cell.neighbors:
-                if cell.neighbors[n] is None:
-                    continue
-                else:
-                    cell.neighbors[n].update_possible_tiles(change_dir[n])
+        # update the tile in the neighboring cells
+        for n in collapse_cell.neighbors:
+            if collapse_cell.neighbors[n] is None:
+                continue
+            else:
+                change_dir = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
+                collapse_cell.neighbors[n].update_possible_tiles(change_dir[n])
+
+        # select the cell with minimale entropy
+        entropy_list = []
+        for y, row in enumerate(cells):
+            for x, cell in enumerate(row):
+                if not cell.is_collapsed:
+                    entropy_list.append([cell.position, cell.entropy()])
+
+        coord, _ = find_min_entropy(entropy_list)
+
+        collapse_cell = cells[coord[0]][coord[1]]
+        print(f"next to collapse: cell {collapse_cell.position}")
         visualize_grid(cells, grid_size, tile_size, tiles, f"{output_dir}/step{step}.png")
-        print(f"Step {step}: Next collapsed cell saved as 'step{step}.png'")
-        
+
+        """
         lowest_entropy_cells = [cell for row in cells for cell in row if not cell.is_collapsed() and cell.entropy() > 0]
         cell_to_collapse = min(lowest_entropy_cells, key=lambda c: c.entropy())
         print(cell_to_collapse.position)
         cell_to_collapse.collapse()
         collapse_list = [cell_to_collapse]
-        if all(cell.is_collapsed() or cell.entropy() == 0 for row in cells for cell in row):
+        """
+        if all(cell.is_collapsed for row in cells for cell in row):
+            break
+
+        if step > max_step:
+            print("max step reached")
             break
 
     print("Grid collapse complete.")
