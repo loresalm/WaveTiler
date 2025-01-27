@@ -24,7 +24,7 @@ class Cell:
         neighbor = self.neighbors.get(direction)
         collapsed_tile = neighbor.collapsed_tile
         opposite = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
-        compatible_tiles = collapsed_tile.compatible_tiles[direction]
+        compatible_tiles = collapsed_tile.compatible_tiles[opposite[direction]]
         common_tiles = self.possible_tiles_id.intersection(compatible_tiles)
         if common_tiles:
             new_tiles = set()
@@ -75,13 +75,14 @@ def visualize_grid(cells, grid_size, tile_size, tiles, save_path):
     for row in cells:
         for cell in row:
             if cell.is_collapsed:
-                print(f"{cell.position} --> {cell.entropy()} --> is collapsed")
+                #print(f"{cell.position} --> {cell.entropy()} --> is collapsed")
                 tile = list(cell.possible_tiles)[0]
                 tile_img = tile.image
                 pos_x, pos_y = cell.position[0] * tile_size, cell.position[1] * tile_size
                 grid_img.paste(tile_img, (pos_x, pos_y))
             else:
-                print(f"{cell.position} --> {cell.entropy()}")
+                pass
+                #print(f"{cell.position} --> {cell.entropy()}")
 
     grid_img.save(save_path)
 
@@ -100,8 +101,8 @@ def find_min_entropy(elements):
 
 
 def main():
-    tile_dir = "data/set2/extended"
-    output_dir = "data/set2/output"
+    tile_dir = "data/set3/extended"
+    output_dir = "data/set3/output"
 
     # remove all previous outputs 
     for filename in os.listdir(output_dir):
@@ -116,7 +117,7 @@ def main():
         t.check_tile_compatibility(tiles)
 
     # pram output
-    grid_size = 8
+    grid_size = 10
     tile_size = tiles[0].image.size[0]
     max_step = grid_size*grid_size + 1
 
@@ -142,7 +143,7 @@ def main():
     visualize_grid(cells, grid_size, tile_size, tiles, f"{output_dir}/step{step}.png")
 
     # collapsing a cell
-    collapse_cell = cells[0][1]
+    collapse_cell = cells[5][5]
 
     # loop until the grid is complete
     while True:
