@@ -50,6 +50,7 @@ class Cell:
         return False
         """
     def collapse(self):
+        print("choice ---> ", list(self.possible_tiles))
         self.possible_tiles = {random.choice(list(self.possible_tiles))}
         self.possible_tiles_id = {list(self.possible_tiles)[0].id}
         self.collapsed_tile = list(self.possible_tiles)[0]
@@ -62,11 +63,16 @@ class Cell:
 def load_tiles(tile_dir):
     tiles = []
     for idx, file in enumerate(os.listdir(tile_dir)):
+        i = 0
+        off_idx = -1
         if file.endswith((".png", ".jpg", ".jpeg")):
+            if file == "off.png":
+                off_idx == i
             path = os.path.join(tile_dir, file)
             tile_image = Image.open(path).convert("RGB")
             tiles.append(Tile(tile_image, idx))
-    return tiles
+            i += 1  
+    return tiles, off_idx
 
 
 def visualize_grid(cells, grid_size, tile_size, tiles, save_path):
@@ -101,8 +107,8 @@ def find_min_entropy(elements):
 
 
 def main():
-    tile_dir = "data/set3/extended"
-    output_dir = "data/set3/output"
+    tile_dir = "data/set4/comb/extended"
+    output_dir = "data/set4/output"
 
     # remove all previous outputs 
     for filename in os.listdir(output_dir):
@@ -111,8 +117,8 @@ def main():
     while any(os.path.exists(os.path.join(output_dir, f)) for f in os.listdir(output_dir)):
         time.sleep(0.1)
 
-    # load tiles and check compatibility 
-    tiles = load_tiles(tile_dir)
+    # load tiles and check compatibility
+    tiles, off_idx = load_tiles(tile_dir)
     for t in tiles:
         t.check_tile_compatibility(tiles)
 
@@ -143,7 +149,7 @@ def main():
     visualize_grid(cells, grid_size, tile_size, tiles, f"{output_dir}/step{step}.png")
 
     # collapsing a cell
-    collapse_cell = cells[5][5]
+    collapse_cell = cells[2][2]
 
     # loop until the grid is complete
     while True:

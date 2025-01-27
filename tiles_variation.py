@@ -126,8 +126,8 @@ def generate_unique_variations(folder_path):
 
 
 # Example usage
-tile_set = "set3"
-folder_path = f"data/{tile_set}"
+tile_set = "set4"
+folder_path = f"data/{tile_set}/comb"
 tile1_path = f"{folder_path}/extended/corner_tile_var1.png"
 tile2_path = f"{folder_path}/extended/corner_tile_var4.png"
 output_path = f"{folder_path}/extended/var1_vs_var4.png"

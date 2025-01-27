@@ -48,6 +48,13 @@ def create_corner_tile(size, save_path):
     tile.save(save_path)
 
 
+def create_start_tile(size, save_path):
+    tile = Image.new('RGB', (size, size), 'turquoise')
+    draw = ImageDraw.Draw(tile)
+    draw.rectangle([0, 4, 6, 7], fill='black')
+    tile.save(save_path)
+
+
 def main():
     tile_size = 12
     output_dir = 'data/set3/'
@@ -59,6 +66,7 @@ def main():
     cross_tile_path = os.path.join(output_dir, 'cross_tile.png')
     oblique_tile_path = os.path.join(output_dir, 'oblique_tile.png')
     corner_tile_path = os.path.join(output_dir, 'corner_tile.png')
+    start_tile_path = os.path.join(output_dir, 'start_tile.png')
     
     create_blank_tile(tile_size, blank_tile_path)
     create_striped_tile(tile_size, striped_tile_path)
@@ -66,6 +74,7 @@ def main():
     create_full_tile(tile_size, full_tile_path)
     create_oblique_tile(tile_size, oblique_tile_path)
     create_corner_tile(tile_size, corner_tile_path)
+    create_start_tile(tile_size, start_tile_path)
     
     print(f'Tiles saved in {output_dir}')
 
