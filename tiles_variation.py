@@ -2,6 +2,7 @@ import os
 import shutil
 from PIL import Image, ImageChops
 import time
+import json
 
 def is_image_equal(img1, img2):
     """Check if two images are identical."""
@@ -54,7 +55,6 @@ def create_extended_folder_and_copy_tiles(folder_path):
 def visualize_tile_differences(tile1_path, tile2_path, output_path):
     """
     Visualizes two tiles side by side, highlighting the differing pixels in red.
-    
     Args:
         tile1_path (str): Path to the first tile image.
         tile2_path (str): Path to the second tile image.
@@ -88,46 +88,131 @@ def visualize_tile_differences(tile1_path, tile2_path, output_path):
     combined_image.save(output_path)
     print(f"Difference visualization saved to {output_path}")
 
-def generate_unique_variations(folder_path):
+
+def rotate_tile_properties(properties):
+    """Rotate the properties of a tile 90 degrees clockwise."""
+    return {
+        "top": properties["left"],
+        "right": properties["top"],
+        "bottom": properties["right"],
+        "left": properties["bottom"]
+    }
+
+
+def flip_tile_properties(properties, mode):
+    """Flip the properties of a tile horizontally or vertically."""
+    if mode == "horizontal":
+        return {
+            "top": properties["top"],
+            "right": properties["left"],
+            "bottom": properties["bottom"],
+            "left": properties["right"]
+        }
+    elif mode == "vertical":
+        return {
+            "top": properties["bottom"],
+            "right": properties["right"],
+            "bottom": properties["top"],
+            "left": properties["left"]
+        }
+    else:
+        raise ValueError("Invalid flip mode. Use 'horizontal' or 'vertical'.")
+
+
+def generate_unique_variations(folder_path, json_path):
     """Generate rotated and mirrored variations of images and save only unique ones."""
     extended_folder = create_extended_folder_and_copy_tiles(folder_path)
+
+    # Load the existing JSON file
+    with open(json_path, 'r') as f:
+        tile_data = json.load(f)
 
     variations = []
     for file in os.listdir(folder_path):
         if file.endswith(('.png', '.jpg', '.jpeg')):
             image_path = os.path.join(folder_path, file)
             original = Image.open(image_path)
-            variations.append(original)
+            tile_name = os.path.splitext(file)[0]
+
+            # Find the corresponding tile properties in the JSON
+            tile_properties = None
+            for tile in tile_data["tiles"]:
+                if tile["tile"] == tile_name:
+                    tile_properties = tile
+                    break
+
+            if not tile_properties:
+                print(f"Warning: No properties found for tile {tile_name}. Skipping.")
+                continue
+
+            # Add the original tile and its properties
+            variations.append((original, tile_properties, tile_name))
+
             # Generate rotated versions (90°, 180°, 270°)
             rotated = original
+            rotated_properties = tile_properties.copy()
             for _ in range(3):
                 rotated = rotated.rotate(90, expand=True)
-                variations.append(rotated.copy())
+                rotated_properties = rotate_tile_properties(rotated_properties)
+                variations.append((rotated.copy(), rotated_properties.copy(), tile_name))
 
             # Generate mirrored versions
-            variations.append(original.transpose(Image.FLIP_LEFT_RIGHT))  # Horizontal mirror
-            variations.append(original.transpose(Image.FLIP_TOP_BOTTOM))  # Vertical mirror
+            flipped_horizontal = original.transpose(Image.FLIP_LEFT_RIGHT)
+            flipped_horizontal_properties = flip_tile_properties(tile_properties, "horizontal")
+            variations.append((flipped_horizontal, flipped_horizontal_properties, tile_name))
+
+            flipped_vertical = original.transpose(Image.FLIP_TOP_BOTTOM)
+            flipped_vertical_properties = flip_tile_properties(tile_properties, "vertical")
+            variations.append((flipped_vertical, flipped_vertical_properties, tile_name))
 
     uniques = []
-    for var in variations:
+    unique_properties = []
+    for img, properties, tile_name in variations:
         is_unique = True
-        for img in uniques:
-            if is_image_equal(var, img):
+        for unique_img, _, _ in uniques:
+            if is_image_equal(img, unique_img):
                 is_unique = False
                 break
         if is_unique:
-            uniques.append(var)
+            uniques.append((img, properties, tile_name))
+            unique_properties.append(properties)
+
+    # Create a new JSON file for unique variations
+    new_json_data = {"tiles": []}
+
+    # Add unique variations to the new JSON file
     count = 1
-    for img in uniques:
-        new_filename = f"{os.path.splitext(file)[0]}_var{count}.png"
+    for img, properties, tile_name in uniques:
+        # Skip the original tiles (only include variations)
+        if properties == tile_data["tiles"][0]:  # Check if it's the original tile
+            continue
+
+        new_filename = f"{tile_name}_var{count}.png"
         img.save(os.path.join(extended_folder, new_filename))
         print(f"Saved unique variation as {new_filename}")
+
+        # Add the new variation to the new JSON file
+        new_tile_entry = {
+            "tile": f"{tile_name}_var{count}",
+            "top": properties["top"],
+            "bottom": properties["bottom"],
+            "left": properties["left"],
+            "right": properties["right"]
+        }
+        new_json_data["tiles"].append(new_tile_entry)
         count += 1
+
+    # Save the new JSON file
+    new_json_path = os.path.join(f"{folder_path}/extended", "unique_variations.json")
+    with open(new_json_path, 'w') as f:
+        json.dump(new_json_data, f, indent=4)
+    print(f"Created new JSON file with unique variations at {new_json_path}")
 
 
 # Example usage
-tile_set = "set4"
-folder_path = f"data/{tile_set}/comb"
+tile_set = "set3_small"
+folder_path = f"data/{tile_set}"
+json_path = f"data/{tile_set}/bound.json"
 tile1_path = f"{folder_path}/extended/corner_tile_var1.png"
 tile2_path = f"{folder_path}/extended/corner_tile_var4.png"
 output_path = f"{folder_path}/extended/var1_vs_var4.png"
@@ -136,4 +221,5 @@ tile3_path = f"{folder_path}/extended/corner_tile_var3.png"
 tile5_path = f"{folder_path}/extended/corner_tile_var5.png"
 output_path = f"{folder_path}/extended/var3_vs_var5.png"
 #visualize_tile_differences(tile3_path, tile5_path, output_path)
-generate_unique_variations(folder_path)
+
+generate_unique_variations(folder_path, json_path)
