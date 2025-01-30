@@ -4,12 +4,15 @@ import numpy as np
 
 
 class Tile:
-    def __init__(self, image, id):
+    def __init__(self, image, id, bounds):
         self.image = image
         self.id = id
         self.compatible_tiles = {"top": set(), "bottom": set(), "left": set(), "right": set()}
+        self.bounds = bounds
 
     def get_edge(self, direction):
+        return self.bounds[direction]
+        """
         array = np.array(self.image)
         if direction == "top":
             return array[0, :, :]
@@ -19,6 +22,7 @@ class Tile:
             return array[:, 0, :]
         elif direction == "right":
             return array[:, -1, :]
+        """
 
     def check_tile_compatibility(self, tiles):
         directions = ["top", "bottom", "left", "right"]
@@ -27,7 +31,7 @@ class Tile:
             self_edge = self.get_edge(direction)
             for other_tile in tiles:
                 other_edge = other_tile.get_edge(opposite[direction])
-                if np.array_equal(self_edge, other_edge):
+                if self_edge == other_edge:
                     self.add_compatible_tile(direction, other_tile.id)
 
     def add_compatible_tile(self, direction, tile_id):

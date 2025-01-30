@@ -3,6 +3,7 @@ import random
 import os
 from PIL import Image
 import time
+import json
 
 
 class Cell:
@@ -60,18 +61,24 @@ class Cell:
         return len(self.possible_tiles)
 
 
-def load_tiles(tile_dir):
+def load_tiles(tile_dir, file_path):
+    with open(file_path, 'r') as file:
+        compatibility = json.load(file)
     tiles = []
     for idx, file in enumerate(os.listdir(tile_dir)):
         i = 0
         off_idx = -1
         if file.endswith((".png", ".jpg", ".jpeg")):
-            if file == "off.png":
-                off_idx == i
+            tile_bounds = None
+            tile_name = file.replace(".png", "")
+            for tile in compatibility['tiles']:
+                if tile['tile'] == tile_name:
+                    tile_bounds = tile
+                    break
             path = os.path.join(tile_dir, file)
             tile_image = Image.open(path).convert("RGB")
-            tiles.append(Tile(tile_image, idx))
-            i += 1  
+            tiles.append(Tile(tile_image, idx, tile_bounds))
+            i += 1
     return tiles, off_idx
 
 
@@ -107,8 +114,9 @@ def find_min_entropy(elements):
 
 
 def main():
-    tile_dir = "data/set4/comb/extended"
+    tile_dir = "data/set3_small/extended"
     output_dir = "data/set4/output"
+    comp_path = f"{tile_dir}/unique_variations.json"
 
     # remove all previous outputs 
     for filename in os.listdir(output_dir):
@@ -118,7 +126,8 @@ def main():
         time.sleep(0.1)
 
     # load tiles and check compatibility
-    tiles, off_idx = load_tiles(tile_dir)
+    tiles, off_idx = load_tiles(tile_dir, comp_path)
+    print("  ------>  loading done")
     for t in tiles:
         t.check_tile_compatibility(tiles)
 
