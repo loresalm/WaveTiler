@@ -3,6 +3,7 @@ import shutil
 from PIL import Image, ImageChops
 import time
 import json
+import numpy as np
 
 def is_image_equal(img1, img2):
     """Check if two images are identical."""
@@ -92,29 +93,53 @@ def visualize_tile_differences(tile1_path, tile2_path, output_path):
 def rotate_tile_properties(properties):
     """Rotate the properties of a tile 90 degrees clockwise."""
     return {
+            "top": properties["right"],  # Right → Top
+            "right": properties["bottom"][::-1],  # Bottom (reversed) → Right
+            "bottom": properties["left"],  # Left → Bottom
+            "left": properties["top"][::-1],  # Top (reversed) → Left
+        }
+    """
+    return {
         "top": properties["left"],
         "right": properties["top"],
         "bottom": properties["right"],
         "left": properties["bottom"]
     }
+    """
 
 
 def flip_tile_properties(properties, mode):
     """Flip the properties of a tile horizontally or vertically."""
     if mode == "horizontal":
         return {
+            "top": properties["top"][::-1],  # Reverse Top
+            "right": properties["left"],  # Left → Right
+            "bottom": properties["bottom"][::-1],  # Reverse Bottom
+            "left": properties["right"],  # Right → Left
+        }
+        """
+        return {
             "top": properties["top"],
             "right": properties["left"],
             "bottom": properties["bottom"],
             "left": properties["right"]
         }
+        """
     elif mode == "vertical":
+        return {
+            "top": properties["bottom"],  # Bottom → Top
+            "right": properties["right"][::-1],  # Reverse Right
+            "bottom": properties["top"],  # Top → Bottom
+            "left": properties["left"][::-1],  # Reverse Left
+        }
+        """
         return {
             "top": properties["bottom"],
             "right": properties["right"],
             "bottom": properties["top"],
             "left": properties["left"]
         }
+        """
     else:
         raise ValueError("Invalid flip mode. Use 'horizontal' or 'vertical'.")
 
@@ -130,6 +155,7 @@ def generate_unique_variations(folder_path, json_path):
     variations = []
     for file in os.listdir(folder_path):
         if file.endswith(('.png', '.jpg', '.jpeg')):
+            print(file)
             image_path = os.path.join(folder_path, file)
             original = Image.open(image_path)
             tile_name = os.path.splitext(file)[0]
@@ -168,9 +194,17 @@ def generate_unique_variations(folder_path, json_path):
     uniques = []
     unique_properties = []
     for img, properties, tile_name in variations:
+        print(tile_name)
         is_unique = True
+        print(uniques)
         for unique_img, _, _ in uniques:
-            if is_image_equal(img, unique_img):
+            print(img.size, unique_img.size)
+            unique_img_ = np.array(unique_img)
+            img_ = np.array(img)
+            # Check if the arrays are identical
+            if np.array_equal(img_, unique_img_):
+            #if is_image_equal(img, unique_img):
+                print("---> not unique")
                 is_unique = False
                 break
         if is_unique:
@@ -183,6 +217,7 @@ def generate_unique_variations(folder_path, json_path):
     # Add unique variations to the new JSON file
     count = 1
     for img, properties, tile_name in uniques:
+        print(tile_name)
         # Skip the original tiles (only include variations)
         if properties == tile_data["tiles"][0]:  # Check if it's the original tile
             continue
@@ -210,9 +245,11 @@ def generate_unique_variations(folder_path, json_path):
 
 
 # Example usage
-tile_set = "set3_small"
+tile_set = "set4_small"
 folder_path = f"data/{tile_set}"
 json_path = f"data/{tile_set}/bound.json"
+generate_unique_variations(folder_path, json_path)
+"""
 tile1_path = f"{folder_path}/extended/corner_tile_var1.png"
 tile2_path = f"{folder_path}/extended/corner_tile_var4.png"
 output_path = f"{folder_path}/extended/var1_vs_var4.png"
@@ -221,5 +258,5 @@ tile3_path = f"{folder_path}/extended/corner_tile_var3.png"
 tile5_path = f"{folder_path}/extended/corner_tile_var5.png"
 output_path = f"{folder_path}/extended/var3_vs_var5.png"
 #visualize_tile_differences(tile3_path, tile5_path, output_path)
+"""
 
-generate_unique_variations(folder_path, json_path)

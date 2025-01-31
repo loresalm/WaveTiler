@@ -114,8 +114,8 @@ def find_min_entropy(elements):
 
 
 def main():
-    tile_dir = "data/set3_small/extended"
-    output_dir = "data/set4/output"
+    tile_dir = "data/set4_small/extended"
+    output_dir = "data/set4_small/output"
     comp_path = f"{tile_dir}/unique_variations.json"
 
     # remove all previous outputs 
@@ -132,7 +132,7 @@ def main():
         t.check_tile_compatibility(tiles)
 
     # pram output
-    grid_size = 10
+    grid_size = 12
     tile_size = tiles[0].image.size[0]
     max_step = grid_size*grid_size + 1
 
@@ -158,7 +158,7 @@ def main():
     visualize_grid(cells, grid_size, tile_size, tiles, f"{output_dir}/step{step}.png")
 
     # collapsing a cell
-    collapse_cell = cells[2][2]
+    collapse_cell = cells[6][6]
 
     # loop until the grid is complete
     while True:
